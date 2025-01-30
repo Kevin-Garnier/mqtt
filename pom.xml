@@ -44,14 +44,26 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
-                <configuration>
-                    <executable>java</executable>
-                    <arguments>
-                        <argument>-classpath</argument>
-                        <classpath />
-                        <argument>mqtt.PublishingMqttClient</argument>
-                    </arguments>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>publisher</id>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>mqtt.PublishingMqttClient</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>subscriber</id>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>mqtt.SubscribingMqttClient</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
