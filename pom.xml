@@ -63,6 +63,15 @@
                             <mainClass>mqtt.SubscribingMqttClient</mainClass>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>subscriberex5</id>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>mqtt.MqttSubscriber</mainClass>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
