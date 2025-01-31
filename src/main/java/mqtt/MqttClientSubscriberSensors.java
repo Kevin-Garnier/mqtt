@@ -16,6 +16,8 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 	private String clientId;
 	private double sumTemperature;
 	private double sumHumidity;
+	
+	private Thread writer;
 
 	private static AtomicInteger COUNTER_TEMP = new AtomicInteger();
 	private static AtomicInteger COUNTER_HUM = new AtomicInteger();
@@ -26,6 +28,7 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 		this.clientId = clientId;
 		this.sumTemperature = 0;
 		this.sumHumidity = 0;
+		writer = new Thread(new WriterTask());
 	}
 
 	public static void main(String[] args) {
@@ -57,30 +60,8 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 
 		client.connect(connectOptions);
 		client.subscribe(topic);
-		new Thread(() -> {
-			while (true) {
-				if (COUNTER_TEMP.get() > 10) {
-					double avgTemp = getAverage(sumTemperature, COUNTER_TEMP.get());
-					double avgHum = getAverage(sumHumidity, COUNTER_HUM.get());
-					sumTemperature = 0;
-					sumHumidity = 0;
-					COUNTER_TEMP.set(0);
-					COUNTER_HUM.set(0);
-					String messageContent = "Average temperature: " + avgTemp + " and Humidity: " + avgHum;
-					log.info(messageContent);
-					MqttMessage msg = new MqttMessage(messageContent.getBytes());
-					msg.setQos(0);
-					msg.setRetained(true);
-					String topicAvg = "/home/Lyon/sido/averages";
-					try {
-						client.publish(topicAvg, msg);
-					} catch (MqttException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			}
-		}).run();
+		writer.run();
+	
 	}
 
 	@Override
@@ -105,10 +86,52 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 			sumHumidity += Double.parseDouble(message.toString());
 			COUNTER_HUM.getAndIncrement();
 		}
+		
+		if (COUNTER_TEMP.get() > 10)
+			notifyAll();
 	}
 
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken token) {
 		log.info(clientId + " - Delivery complete");
+	}
+	
+	private class WriterTask implements Runnable {
+
+		@Override
+		private class WriterTask implements Runnable {
+
+			@Override
+			public void run() {
+				synchronized(MqttClientSubscriberSensors.this) {
+					while(true) {
+						try {
+							wait(); // Wait for the condition to be met
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+						if (COUNTER_TEMP.get() > 10) {
+							double avgTemp = getAverage(sumTemperature, COUNTER_TEMP.get());
+							double avgHum = getAverage(sumHumidity, COUNTER_HUM.get());
+							sumTemperature = 0;
+							sumHumidity = 0;
+							COUNTER_TEMP.set(0);
+							COUNTER_HUM.set(0);
+							String messageContent = "Average temperature: " + avgTemp + " and Humidity: " + avgHum;
+							log.info(messageContent);
+							MqttMessage msg = new MqttMessage(messageContent.getBytes());
+							msg.setQos(0);
+							msg.setRetained(true);
+							String topicAvg = "/home/Lyon/sido/averages";
+							try {
+								client.publish(topicAvg, msg);
+							} catch (MqttException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+		}	
 	}
 }
