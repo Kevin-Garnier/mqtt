@@ -1,5 +1,7 @@
 package mqtt;
 
+import java.time.LocalDateTime;
+
 //added external jar: c:\ada\work\lectures\slr203\mqtt\paho\paho-java-maven\org.eclipse.paho.client.mqttv3-1.2.5.jar
 
 import org.eclipse.paho.client.mqttv3.*;
@@ -10,8 +12,8 @@ public class PublishingMqttClient {//synchronous client
 	public static void main(String[] args) {
 
 		String topic        = "labs/paho-example-topic";
-	    String messageContent = "Message from my Lab's Paho Mqtt Client";
-	    int qos             = 0;
+	    String messageContent = "Message from my Lab's Paho Mqtt Client " + LocalDateTime.now();
+	    int qos             = 2;
 	    String brokerURI       = "tcp://localhost:1883";
 	    String clientId     = "myClientID_Sub";
 	    //MemoryPersistence persistence = new MemoryPersistence();

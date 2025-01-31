@@ -25,7 +25,7 @@ public class SubscribingMqttClient implements MqttCallback {
 
 		String topic        = "labs/paho-example-topic";
 	    String messageContent = "Message from my Lab's Paho Mqtt Client";
-	    int qos             = 0;
+	    int qos             = 2;
 	    String brokerURI       = "tcp://localhost:1883";
 	    String clientId     = "myClientID_Pub";
 	    //MemoryPersistence persistence = new MemoryPersistence();
@@ -46,7 +46,7 @@ public class SubscribingMqttClient implements MqttCallback {
             //specify the Mqtt Client's connection options
 	    	MqttConnectOptions connectOptions = new MqttConnectOptions();
 	    	//clean session
-	    	connectOptions.setCleanSession(true);
+	    	connectOptions.setCleanSession(false);
 
 
             client.connect(connectOptions);
