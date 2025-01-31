@@ -27,7 +27,7 @@ public class SubscribingMqttClient implements MqttCallback {
 	    String messageContent = "Message from my Lab's Paho Mqtt Client";
 	    int qos             = 0;
 	    String brokerURI       = "tcp://localhost:1883";
-	    String clientId     = "myClientID_Pub";
+	    String clientId     = "myClientID_Sub";
 	    //MemoryPersistence persistence = new MemoryPersistence();
 
         try {

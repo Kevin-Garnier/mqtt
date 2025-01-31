@@ -13,12 +13,17 @@ public class MqttClientSubscriberSensors implements MqttCallback {
     private MqttClient client;
     private String topic;
     private String clientId;
+    private double sumTemperature;
+    private double sumHumidity;
 
-    Logger log = Logger.getLogger(SubscribingMqttClient.class.getName());
+    private static int COUNTER = 0;
+    Logger log = Logger.getLogger(MqttClientSubscriberSensors.class.getName());
 
     public MqttClientSubscriberSensors(String topic, String clientId) {
         this.topic = topic;
         this.clientId = clientId;
+        this.sumTemperature = 0;
+        this.sumHumidity = 0;
     }
 
     public static void main(String[] args) {
@@ -27,12 +32,12 @@ public class MqttClientSubscriberSensors implements MqttCallback {
         String messageContent = "Message from my Lab's Paho Mqtt Client";
         int qos             = 0;
         String brokerURI       = "tcp://localhost:1883";
-        String clientId     = "myClientID_Pub";
+        String clientId     = "myClientID_SubSensors";
         //MemoryPersistence persistence = new MemoryPersistence();
 
         try {
-            SubscribingMqttClient subscribingMqttcCient = new SubscribingMqttClient(topic, clientId);
-            subscribingMqttcCient.connect(brokerURI, topic);
+            MqttClientSubscriberSensors subscribingMqttClient = new MqttClientSubscriberSensors(topic, clientId);
+            subscribingMqttClient.connect(brokerURI, topic);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -60,9 +65,33 @@ public class MqttClientSubscriberSensors implements MqttCallback {
         System.exit(1);
     }
 
+    public double getAverage(double number){
+        return number / 100;
+    }
+
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         log.info("Message arrived from topic " + topic +" : " + "\nContent: " + message.toString());
+        String value = topic.substring(topic.lastIndexOf("/") + 1);
+        if (value.equals("value")) {
+            sumTemperature += Double.parseDouble(message.toString());
+        } else {
+            sumHumidity += Double.parseDouble(message.toString());
+        }
+        COUNTER++;
+        if (COUNTER % 100 == 0) {
+            double avgTemp = getAverage(sumTemperature);
+            double avgHum = getAverage(sumHumidity);
+            String messageContent = "Average temperature: " + avgTemp + " and Humidity: " + avgHum;
+            log.info(messageContent);
+            MqttMessage msg = new MqttMessage(messageContent.getBytes());
+            msg.setQos(0);
+            msg.setRetained(true);
+            String topicAvg = "/home/Lyon/sido/averages";
+            client.publish(topicAvg, msg);
+            sumTemperature = 0;
+            sumHumidity = 0;
+        }
     }
 
     @Override
