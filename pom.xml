@@ -64,12 +64,21 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>subscriberex5</id>
+                        <id>publishersensors</id>
                         <goals>
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <mainClass>mqtt.MqttSubscriber</mainClass>
+                            <mainClass>mqtt.MqttClientPublisherSensors</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>subscribersensors</id>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>mqtt.MqttClientSubscriberSensors</mainClass>
                         </configuration>
                     </execution>
                 </executions>

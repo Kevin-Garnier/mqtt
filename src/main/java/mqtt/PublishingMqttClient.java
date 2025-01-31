@@ -1,6 +1,7 @@
 package mqtt;
 
 import java.time.LocalDateTime;
+import java.util.logging.Logger;
 
 //added external jar: c:\ada\work\lectures\slr203\mqtt\paho\paho-java-maven\org.eclipse.paho.client.mqttv3-1.2.5.jar
 
@@ -8,6 +9,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class PublishingMqttClient {//synchronous client
+	private static final Logger LOGGER = Logger.getLogger(PublishingMqttClient.class.getName());
 
 	public static void main(String[] args) {
 
@@ -32,30 +34,30 @@ public class PublishingMqttClient {//synchronous client
 	    	//...
 
 	    	////connect the mqtt client to the broker
-	    	System.out.println("Mqtt Client: Connecting to Mqtt Broker running at: " + brokerURI);
+	    	LOGGER.info("Mqtt Client: Connecting to Mqtt Broker running at: " + brokerURI);
 	    	mqttClient.connect(connectOptions);
-            System.out.println("Mqtt Client: sucessfully Connected.");
+            LOGGER.info("Mqtt Client: sucessfully Connected.");
 
             ////publish a message
-            System.out.println("Mqtt Client: Publishing message: " + messageContent);
+            LOGGER.info("Mqtt Client: Publishing message: " + messageContent);
             MqttMessage message = new MqttMessage(messageContent.getBytes());//instantiate the message including its content (payload)
             message.setQos(qos);//set the message's QoS
 			message.setRetained(true); //set the retained flag
             mqttClient.publish(topic, message);//publish the message to a given topic
-            System.out.println("Mqtt Client: successfully published the message.");
+            LOGGER.info("Mqtt Client: successfully published the message.");
 
             ////disconnect the Mqtt Client
             mqttClient.disconnect();
-            System.out.println("Mqtt Client: Disconnected.");
+            LOGGER.info("Mqtt Client: Disconnected.");
 
 
 	    }
 	    catch(MqttException e) {
-	    	System.out.println("Mqtt Exception reason: " + e.getReasonCode());
-            System.out.println("Mqtt Exception message: " + e.getMessage());
-            System.out.println("Mqtt Exception location: " + e.getLocalizedMessage());
-            System.out.println("Mqtt Exception cause: " + e.getCause());
-            System.out.println("Mqtt Exception reason: " + e);
+	    	LOGGER.severe("Mqtt Exception reason: " + e.getReasonCode());
+            LOGGER.severe("Mqtt Exception message: " + e.getMessage());
+            LOGGER.severe("Mqtt Exception location: " + e.getLocalizedMessage());
+            LOGGER.severe("Mqtt Exception cause: " + e.getCause());
+            LOGGER.severe("Mqtt Exception reason: " + e);
             e.printStackTrace();
 	    }
 

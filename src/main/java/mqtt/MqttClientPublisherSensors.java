@@ -5,11 +5,11 @@ import java.util.logging.Logger;
 
 import org.eclipse.paho.client.mqttv3.*;
 
-public class MqttSubscriber {
+public class MqttClientPublisherSensors {
 	private static final String BROKER = "tcp://localhost:1883";
 	private static final String TOPIC = "/home/Lyon/sido/";
 	private static final String[] SENSORS = {"dht20", "sht30"};
-	private static final Logger LOGGER = Logger.getLogger(MqttSubscriber.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(MqttClientPublisherSensors.class.getName());
 	
 	public static void main(String[] args) {
 		try {
@@ -19,8 +19,9 @@ public class MqttSubscriber {
 			
 			Random random = new Random();
 			boolean sendTemperature = true;
-			
-			while(true) {
+
+			int i=0;
+			while(i < 1000) {
 				for (String sensor : SENSORS) {
 					double value = sendTemperature ? 19.0 + (10.0 * random.nextDouble()) : 45.0 + (20.0 * random.nextDouble());
 					String suffix = sendTemperature ? "/value" : "/value2";
@@ -33,8 +34,10 @@ public class MqttSubscriber {
 				}
 				sendTemperature = !sendTemperature;
 				Thread.sleep(1000);
+				i++;
 			}
-		} catch (Exception e) {
+			client.disconnect();
+        } catch (Exception e) {
 			LOGGER.severe("Error occurred: " + e.getMessage());
 		}
 	}
