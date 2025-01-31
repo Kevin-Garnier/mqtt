@@ -11,9 +11,9 @@ public class PublishingMqttClient {//synchronous client
 
 	public static void main(String[] args) {
 
-		String topic        = "labs/paho-example-topic";
+		String topic        = "labs/new-topic";
 	    String messageContent = "Message from my Lab's Paho Mqtt Client " + LocalDateTime.now();
-	    int qos             = 2;
+	    int qos             = 0;
 	    String brokerURI       = "tcp://localhost:1883";
 	    String clientId     = "myClientID_Sub";
 	    //MemoryPersistence persistence = new MemoryPersistence();
@@ -40,6 +40,7 @@ public class PublishingMqttClient {//synchronous client
             System.out.println("Mqtt Client: Publishing message: " + messageContent);
             MqttMessage message = new MqttMessage(messageContent.getBytes());//instantiate the message including its content (payload)
             message.setQos(qos);//set the message's QoS
+			message.setRetained(true); //set the retained flag
             mqttClient.publish(topic, message);//publish the message to a given topic
             System.out.println("Mqtt Client: successfully published the message.");
 

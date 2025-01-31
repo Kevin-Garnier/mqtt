@@ -82,3 +82,11 @@ Message received
 #### Qos = 2
 
 Message received
+
+### 4.6
+
+Only the last sent message was received on the reconnection
+
+### 4.7
+
+Here a gain only the last message is received.
