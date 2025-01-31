@@ -7,7 +7,7 @@ import org.eclipse.paho.client.mqttv3.*;
 
 public class MqttSubscriber {
 	private static final String BROKER = "tcp://localhost:1883";
-	private static final String TOPIC = "/home/Lyon/sido/#";
+	private static final String TOPIC = "/home/Lyon/sido/";
 	private static final String[] SENSORS = {"dht20", "sht30"};
 	private static final Logger LOGGER = Logger.getLogger(MqttSubscriber.class.getName());
 	
@@ -20,20 +20,16 @@ public class MqttSubscriber {
 			Random random = new Random();
 			boolean sendTemperature = true;
 			
-			double value;
-			String suffix;
-			String topic;
 			while(true) {
 				for (String sensor : SENSORS) {
-					if (sendTemperature) {
-						value = 19.0 + (10.0 * random.nextDouble());
-						suffix = "/value";
-						topic = TOPIC + sensor + suffix;
-					} else {
-						value = 45.0 + (20.0 * random.nextDouble());
-						suffix = "/value2";
-						topic = TOPIC + sensor + suffix;
-					}
+					double value = sendTemperature ? 19.0 + (10.0 * random.nextDouble()) : 45.0 + (20.0 * random.nextDouble());
+					String suffix = sendTemperature ? "/value" : "/value2";
+					String topic = TOPIC + sensor + suffix;
+					MqttMessage message = new MqttMessage(String.valueOf(value).getBytes());
+					message.setQos(0);
+					message.setRetained(true);
+					client.publish(topic, message);
+					LOGGER.info("Mqtt Client: sent " + value + " to " + topic);
 				}
 				sendTemperature = !sendTemperature;
 				Thread.sleep(1000);
