@@ -10,6 +10,7 @@ import org.eclipse.paho.client.mqttv3.*;
 
 public class MqttClientPublisherSensors {
 	private static final Logger LOGGER = Logger.getLogger(MqttClientPublisherSensors.class.getName());
+	private static int COUNTER = 0;
 
 	public static void main(String[] args) {
 		String BROKER = "tcp://localhost:1883";
@@ -32,7 +33,6 @@ public class MqttClientPublisherSensors {
 
 			client.subscribe("/home/Lyon/sido/averages");
 
-			// Implémentation complète de l'interface MqttCallback
 			client.setCallback(new MqttCallback() {
 				@Override
 				public void connectionLost(Throwable cause) {
@@ -53,7 +53,6 @@ public class MqttClientPublisherSensors {
 
 				@Override
 				public void deliveryComplete(IMqttDeliveryToken token) {
-					// Implémentation de la méthode deliveryComplete
 					LOGGER.info(clientId + " - Delivery complete");
 				}
 			});
@@ -65,10 +64,12 @@ public class MqttClientPublisherSensors {
 			while (i < 1000) {
 				for (String sensor : SENSORS) {
 					double value = sendTemperature ? 19.0 + (10.0 * random.nextDouble()) : 45.0 + (20.0 * random.nextDouble());
-					if (sendTemperature) {
-						LOGGER.info("Mqtt Client: Difference between the temperature and the average temperature: " + (value - avgTemperature.get()));
-					} else {
-						LOGGER.info("Mqtt Client: Difference between the humidity and the average humidity: " + (value - avgHumidity.get()));
+					if (COUNTER > 100) {
+						if (sendTemperature) {
+							LOGGER.info("Mqtt Client: Difference between the temperature and the average temperature: " + (value - avgTemperature.get()));
+						} else {
+							LOGGER.info("Mqtt Client: Difference between the humidity and the average humidity: " + (value - avgHumidity.get()));
+						}
 					}
 					String suffix = sendTemperature ? "/value" : "/value2";
 					String topic = TOPIC + sensor + suffix;
@@ -77,6 +78,7 @@ public class MqttClientPublisherSensors {
 					message.setRetained(true);
 					client.publish(topic, message);
 					LOGGER.info("Mqtt Client: sent " + value + " to " + topic);
+					COUNTER++;
 				}
 				sendTemperature = !sendTemperature;
 				Thread.sleep(1000);
