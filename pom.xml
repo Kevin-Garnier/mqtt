@@ -64,7 +64,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>publishersensors</id>
+                        <id>publisher-sensors</id>
                         <goals>
                             <goal>java</goal>
                         </goals>
@@ -73,7 +73,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>subscribersensors</id>
+                        <id>subscriber-sensors</id>
                         <goals>
                             <goal>java</goal>
                         </goals>

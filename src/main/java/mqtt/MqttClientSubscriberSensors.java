@@ -14,21 +14,22 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 	private MqttClient client;
 	private String topic;
 	private String clientId;
-	private double sumTemperature;
-	private double sumHumidity;
-	
-	private Thread writer;
+	private Double sumTemperature;
+	private Double sumHumidity;
 
-	private static AtomicInteger COUNTER_TEMP = new AtomicInteger();
-	private static AtomicInteger COUNTER_HUM = new AtomicInteger();
+	private Thread tempWriter, humWriter;
+
+	private static AtomicInteger COUNTER_TEMP = new AtomicInteger(0);
+	private static AtomicInteger COUNTER_HUM = new AtomicInteger(0);
 	Logger log = Logger.getLogger(MqttClientSubscriberSensors.class.getName());
 
 	public MqttClientSubscriberSensors(String topic, String clientId) {
 		this.topic = topic;
 		this.clientId = clientId;
-		this.sumTemperature = 0;
-		this.sumHumidity = 0;
-		writer = new Thread(new WriterTask());
+		this.sumTemperature = new Double(0);
+		this.sumHumidity = new Double(0);
+		tempWriter = new Thread(new TemperatureWriterTask());
+		humWriter = new Thread(new HumidityWriterTask());
 	}
 
 	public static void main(String[] args) {
@@ -60,8 +61,9 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 
 		client.connect(connectOptions);
 		client.subscribe(topic);
-		writer.run();
-	
+		humWriter.start();
+		tempWriter.start();
+
 	}
 
 	@Override
@@ -78,60 +80,116 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		log.info("Message arrived from topic " + topic + " : " + "\nContent: " + message.toString());
 		String value = topic.substring(topic.lastIndexOf("/") + 1);
-		log.info("COUNTER: " + COUNTER_TEMP);
 		if (value.equals("value")) {
+			log.info("COUNTER_TEMP: " + COUNTER_TEMP);
 			sumTemperature += Double.parseDouble(message.toString());
-			COUNTER_TEMP.getAndIncrement();
+			COUNTER_TEMP.incrementAndGet();
 		} else if (value.equals("value2")) {
+			log.info("COUNTER_HUM: " + COUNTER_HUM);
 			sumHumidity += Double.parseDouble(message.toString());
-			COUNTER_HUM.getAndIncrement();
+			COUNTER_HUM.incrementAndGet();
 		}
-		
-		if (COUNTER_TEMP.get() > 10)
-			notifyAll();
+		synchronized (COUNTER_HUM) {
+			if (COUNTER_HUM.get() > 10) {
+				log.info("send write signal to humWriter");
+				COUNTER_HUM.notifyAll();
+			}
+		}
+
+		synchronized (COUNTER_TEMP) {
+			if (COUNTER_TEMP.get() > 10)
+				COUNTER_TEMP.notifyAll();
+		}
+
 	}
 
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken token) {
 		log.info(clientId + " - Delivery complete");
 	}
-	
-	private class WriterTask implements Runnable {
+
+	private class TemperatureWriterTask implements Runnable {
+
+		private boolean sendTemperature = false;
+		private double avgTemp;
 
 		@Override
-		private class WriterTask implements Runnable {
-
-			@Override
-			public void run() {
-				synchronized(MqttClientSubscriberSensors.this) {
-					while(true) {
-						try {
-							wait(); // Wait for the condition to be met
-						} catch (InterruptedException e1) {
-							e1.printStackTrace();
-						}
-						if (COUNTER_TEMP.get() > 10) {
-							double avgTemp = getAverage(sumTemperature, COUNTER_TEMP.get());
-							double avgHum = getAverage(sumHumidity, COUNTER_HUM.get());
-							sumTemperature = 0;
-							sumHumidity = 0;
-							COUNTER_TEMP.set(0);
-							COUNTER_HUM.set(0);
-							String messageContent = "Average temperature: " + avgTemp + " and Humidity: " + avgHum;
-							log.info(messageContent);
-							MqttMessage msg = new MqttMessage(messageContent.getBytes());
-							msg.setQos(0);
-							msg.setRetained(true);
-							String topicAvg = "/home/Lyon/sido/averages";
-							try {
-								client.publish(topicAvg, msg);
-							} catch (MqttException e) {
-								e.printStackTrace();
-							}
-						}
+		public void run() {
+			while (true) {
+				synchronized (COUNTER_TEMP) {
+					try {
+						COUNTER_TEMP.wait(); // Wait for the condition to be met
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+					if (COUNTER_TEMP.get() > 10) {
+						avgTemp = getAverage(sumTemperature, COUNTER_TEMP.get());
+						sumTemperature = 0.0;
+						COUNTER_TEMP.set(0);
+						sendTemperature = true;
 					}
 				}
+				if (sendTemperature) {
+					try {
+
+						String messageContent = "Average temperature: " + avgTemp;
+						log.info(messageContent);
+						MqttMessage msg = new MqttMessage(messageContent.getBytes());
+						msg.setQos(0);
+						msg.setRetained(true);
+						String topicAvg = "/home/Lyon/sido/averages";
+						synchronized (client){
+						client.publish(topicAvg, msg);
+						}
+					} catch (MqttException e) {
+						e.printStackTrace();
+					}
+				}
+				sendTemperature = false;
 			}
-		}	
+		}
+	}
+
+	private class HumidityWriterTask implements Runnable {
+
+		private boolean sendHumidity = false;
+		private double avgHum;
+
+		@Override
+		public void run() {
+			while (true) {
+				synchronized (COUNTER_HUM) {
+					log.info(clientId + " - Waiting for the condition to be met");
+					try {
+						COUNTER_HUM.wait(); // Wait for the condition to be met
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+				log.info(clientId + " - Condition met");
+					if (COUNTER_HUM.get() > 10) {
+						avgHum = getAverage(sumHumidity, COUNTER_HUM.get());
+						sumHumidity = 0.0;
+						COUNTER_HUM.set(0);
+						sendHumidity = true;
+					}
+				}
+				if (sendHumidity) {
+					try {
+						String messageContent = "Average humidity: " + avgHum;
+						log.info(messageContent);
+						MqttMessage msg = new MqttMessage(messageContent.getBytes());
+						msg.setQos(0);
+						msg.setRetained(true);
+						String topicAvg = "/home/Lyon/sido/averages";
+						synchronized (client) {
+							client.publish(topicAvg, msg);
+						}
+					} catch (MqttException e) {
+						e.printStackTrace();
+					}
+				}
+				sendHumidity = false;
+			}
+		}
 	}
 }
