@@ -23,7 +23,7 @@ public class SubscribingMqttClient implements MqttCallback {
 
     public static void main(String[] args) {
 
-		String topic        = "/home/Lyon/sido/averages";
+		String topic        = "/home/Lyon/sido/averages/#";
 	    String messageContent = "Message from my Lab's Paho Mqtt Client";
 	    int qos             = 0;
 	    String brokerURI       = "tcp://localhost:1883";
@@ -67,6 +67,6 @@ public class SubscribingMqttClient implements MqttCallback {
 
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) {
-        log.info(clientId + " - Delivery complete");
+        // log.info(clientId + " - Delivery complete");
     }
 }

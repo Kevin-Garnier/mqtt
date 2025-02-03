@@ -8,83 +8,125 @@ import java.util.regex.Pattern;
 
 import org.eclipse.paho.client.mqttv3.*;
 
-public class MqttClientPublisherSensors {
+public class MqttClientPublisherSensors implements MqttCallback {
+	private static Random random = new Random();
 	private static final Logger LOGGER = Logger.getLogger(MqttClientPublisherSensors.class.getName());
+	private AtomicReference<Double> avgTemperature = new AtomicReference<>(0.0);
+	private AtomicReference<Double> avgHumidity = new AtomicReference<>(0.0);
+	private MqttClient client;
+	private String[] sensors = { "dht20", "sht30" };
+	private int qos = 0;
+	private String topic;
+	private String clientId;
+
+	public MqttClientPublisherSensors(String topic, String clientId) {
+		this.topic = topic;
+		this.clientId = clientId;
+	}
 
 	public static void main(String[] args) {
-		String BROKER = "tcp://localhost:1883";
-		String TOPIC = "/home/Lyon/sido/";
-		int qos = 0;
-		String[] SENSORS = {"dht20", "sht30"};
-		String clientId = "myClientID_PubSensors";
+		String topic = "/home/Lyon/sido/";
+		String clientId = "myClientID_PubSensors" + random.nextInt(1000);
+		String brokerURI = "tcp://localhost:1883";
 
 		try {
-			AtomicReference<Double> avgTemperature = new AtomicReference<>(0.0);
-			AtomicReference<Double> avgHumidity = new AtomicReference<>(0.0);
+			MqttClientPublisherSensors mqttClientPublisherSensors = new MqttClientPublisherSensors(topic, clientId);
+			mqttClientPublisherSensors.connect(brokerURI);
+		} catch (MqttException e) {
+			LOGGER.severe(e.getMessage());
+		}
 
-			MqttClient client = new MqttClient(BROKER, clientId);
-			MqttConnectOptions connectOptions = new MqttConnectOptions();
-			connectOptions.setCleanSession(true);
+	}
 
-			LOGGER.info("Mqtt Client: Connecting to Mqtt Broker running at: " + BROKER);
-			client.connect(connectOptions);
-			LOGGER.info("Mqtt Client: successfully Connected.");
+	@Override
+	public void connectionLost(Throwable cause) {
+		LOGGER.info("Connection lost because: " + cause);
+		System.exit(1);
+	}
 
-			client.subscribe("/home/Lyon/sido/averages");
+	private void connect(String brokerURI) throws MqttException {
 
-			client.setCallback(new MqttCallback() {
-				@Override
-				public void connectionLost(Throwable cause) {
-					LOGGER.info("Connection lost because: " + cause);
-					System.exit(1);
-				}
+		client = new MqttClient(brokerURI, clientId);
+		MqttConnectOptions connectOptions = new MqttConnectOptions();
+		connectOptions.setCleanSession(true);
 
-				@Override
-				public void messageArrived(String topic, MqttMessage message) throws Exception {
-					String regex = "Average temperature: (\\d+\\.\\d+) and average humidity: (\\d+\\.\\d+)";
-					Pattern p = Pattern.compile(regex);
-					Matcher m = p.matcher(message.toString());
-					if (m.find()) {
-						avgTemperature.set(Double.parseDouble(m.group(1)));
-						avgHumidity.set(Double.parseDouble(m.group(2)));
-					}
-				}
+		LOGGER.info("Mqtt Client: Connecting to Mqtt Broker running at: " + brokerURI);
+		client.connect(connectOptions);
+		LOGGER.info("Mqtt Client: successfully Connected.");
+		client.subscribe(topic+"averages/#");
 
-				@Override
-				public void deliveryComplete(IMqttDeliveryToken token) {
-					LOGGER.info(clientId + " - Delivery complete");
-				}
-			});
+		client.setCallback(this);
 
+		new Thread(new DataSender()).start();
+	}
+
+	@Override
+	public void messageArrived(String topic, MqttMessage message) throws Exception {
+			if (topic.contains("temperature")) {
+				String regex = "Average temperature: (\\d+\\.\\d+)";
+				Pattern p = Pattern.compile(regex);
+				Matcher m = p.matcher(message.toString());
+				double t = m.find() ? Double.parseDouble(m.group(1)) : 0.0;
+				LOGGER.info("Average temperature: " +t);
+				avgTemperature.set(t);
+
+			} else {
+				String regex = "Average humidity: (\\d+\\.\\d+)";
+				Pattern p = Pattern.compile(regex);
+				Matcher m = p.matcher(message.toString());
+				double h = m.find() ? Double.parseDouble(m.group(1)) : 0.0;
+				LOGGER.info("Average humidity: " +h);
+				avgHumidity.set(h);
+			}
+		}
+
+
+	@Override
+	public void deliveryComplete(IMqttDeliveryToken token) {
+		// LOGGER.info(clientId + " - Delivery complete");
+	};
+
+	private class DataSender implements Runnable {
+
+		@Override
+		public void run() {
 			Random random = new Random();
 			boolean sendTemperature = true;
 
-			int i = 0;
-			while (i < 1000) {
-				for (String sensor : SENSORS) {
-					double value = sendTemperature ? 19.0 + (10.0 * random.nextDouble()) : 45.0 + (20.0 * random.nextDouble());
+			while (true) {
+				for (String sensor : sensors) {
+					double value = sendTemperature ? 19.0 + (10.0 * random.nextDouble())
+							: 45.0 + (20.0 * random.nextDouble());
 					if (avgTemperature.get() != 0) {
 						if (sendTemperature) {
-							LOGGER.info("Mqtt Client: Difference between the temperature and the average temperature: " + (value - avgTemperature.get()));
+							LOGGER.info("Mqtt Sensors: Difference between the temperature and the average temperature: "
+									+ (value - avgTemperature.get()));
 						} else {
-							LOGGER.info("Mqtt Client: Difference between the humidity and the average humidity: " + (value - avgHumidity.get()));
+							LOGGER.info("Mqtt Sensors: Difference between the humidity and the average humidity: "
+									+ (value - avgHumidity.get()));
 						}
 					}
 					String suffix = sendTemperature ? "/value" : "/value2";
-					String topic = TOPIC + sensor + suffix;
+					String data_topic = topic + sensor + suffix;
 					MqttMessage message = new MqttMessage(String.valueOf(value).getBytes());
 					message.setQos(qos);
 					message.setRetained(true);
-					client.publish(topic, message);
-					LOGGER.info("Mqtt Client: sent " + value + " to " + topic);
+					try {
+						client.publish(data_topic, message);
+					} catch (MqttException e) {
+						LOGGER.severe(e.getMessage());
+					}
+					LOGGER.info("Mqtt Sensors: sent " + value + " to " + data_topic);
 				}
 				sendTemperature = !sendTemperature;
-				Thread.sleep(1000);
-				i++;
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					LOGGER.severe(e.getMessage());
+				}
 			}
-			client.disconnect();
-		} catch (Exception e) {
-			LOGGER.severe("Error occurred: " + e.getMessage());
 		}
+
 	}
+
 }
