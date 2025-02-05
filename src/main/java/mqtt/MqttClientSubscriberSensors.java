@@ -39,7 +39,7 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 		String topic = "/home/Lyon/sido/#";
 		String messageContent = "Message from my Lab's Paho Mqtt Client";
 		int qos = 0;
-		String brokerURI = "tcp://137.194.140.157:1883";
+		String brokerURI = "tcp://137.194.140.22:1883";
 		String clientId = "myClientID_SubSensors" + random.nextInt(1000);
 		// MemoryPersistence persistence = new MemoryPersistence();
 
