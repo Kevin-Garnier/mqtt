@@ -123,7 +123,7 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 					} catch (InterruptedException e1) {
 						e1.printStackTrace();
 					}
-					if (COUNTER_TEMP.get() > 10) {
+					if (COUNTER_TEMP.get() > 100) {
 						avgTemp = getAverage(sumTemperature, COUNTER_TEMP.get());
 						sumTemperature = 0.0;
 						COUNTER_TEMP.set(0);
@@ -165,7 +165,7 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 					} catch (InterruptedException e1) {
 						e1.printStackTrace();
 					}
-					if (COUNTER_HUM.get() > 10) {
+					if (COUNTER_HUM.get() > 100) {
 						avgHum = getAverage(sumHumidity, COUNTER_HUM.get());
 						sumHumidity = 0.0;
 						COUNTER_HUM.set(0);

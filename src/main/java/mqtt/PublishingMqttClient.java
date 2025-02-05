@@ -13,7 +13,7 @@ public class PublishingMqttClient {//synchronous client
 
 	public static void main(String[] args) {
 
-		String topic        = "labs/new-topic";
+		String topic        = "/labs/new-topic";
 	    String messageContent = "Message from my Lab's Paho Mqtt Client " + LocalDateTime.now();
 	    int qos             = 0;
 	    String brokerURI       = "tcp://localhost:1883";
@@ -62,6 +62,13 @@ public class PublishingMqttClient {//synchronous client
 	    }
 
 	}
+    private static void logMessageBytes(byte[] message) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : message) {
+            sb.append(String.format("%02X ", b));
+        }
+        LOGGER.info("Message bytes: " + sb.toString());
+    }
 
 
 
