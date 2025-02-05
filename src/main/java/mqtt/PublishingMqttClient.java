@@ -16,7 +16,7 @@ public class PublishingMqttClient {//synchronous client
 		String topic        = "/labs/new-topic";
 	    String messageContent = "Message from my Lab's Paho Mqtt Client " + LocalDateTime.now();
 	    int qos             = 0;
-	    String brokerURI       = "tcp://localhost:1883";
+	    String brokerURI       = "tcp://137.194.140.157:1883";
 	    String clientId     = "myClientID_Pub";
 	    //MemoryPersistence persistence = new MemoryPersistence();
 

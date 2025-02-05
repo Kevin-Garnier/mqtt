@@ -27,7 +27,7 @@ public class MqttClientPublisherSensors implements MqttCallback {
 	public static void main(String[] args) {
 		String topic = "/home/Lyon/sido/";
 		String clientId = "myClientID_PubSensors" + random.nextInt(1000);
-		String brokerURI = "tcp://localhost:1883";
+		String brokerURI = "tcp://137.194.140.157:1883";
 
 		try {
 			MqttClientPublisherSensors mqttClientPublisherSensors = new MqttClientPublisherSensors(topic, clientId);
