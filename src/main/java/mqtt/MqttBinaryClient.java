@@ -101,6 +101,16 @@ public class MqttBinaryClient {
      */
     public void connect() throws UnknownHostException, IOException {
         log.info("connecting to " + brokerURI + ":" + port);
+        int payload_length = id.length() + 2;
+        if (will)
+            payload_length += willTopic.length() + willMessage.length() + 4;
+        if (username != null)
+            payload_length += username.length() + 2;
+        if (password != null)
+            payload_length += password.length() + 2;
+        byte[] header = createConnectHeader(payload_length);
+
+        ByteBuffer packet = ByteBuffer.allocate(header.length + payload_length);
         if (username != null)
             packet.put(stringToMQTTFormat(username));
         if (password != null)
