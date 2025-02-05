@@ -53,7 +53,7 @@ public class MqttClientSubscriberSensors implements MqttCallback {
 
 	public void connect(String Uri, String topic) throws MqttException {
 		log.info("Connecting to broker: " + Uri);
-		client = new MqttClient("tcp://localhost:1883", clientId);
+		client = new MqttClient(Uri, clientId);
 		client.setCallback(this);
 
 		// specify the Mqtt Client's connection options
