@@ -596,6 +596,29 @@ public class MqttBinaryClient {
     }
 
     /**
+     * Decodes the remaining length field from the MQTT message.
+     *
+     * @param buffer the ByteBuffer containing the MQTT message
+     * @return the decoded remaining length
+     */
+    private int decodeRemainingLength() throws IOException{
+        int multiplier = 1;
+        int value = 0;
+        byte encodedByte;
+        do {
+            encodedByte = (byte) brokerSocket.getInputStream().read();
+            value += (encodedByte & 127) * multiplier;
+            if (multiplier > 128 * 128 * 128) {
+                throw new IllegalArgumentException("Malformed Remaining Length");
+            }
+            multiplier *= 128;
+
+        } while ((encodedByte & 128) != 0);
+        return value;
+    }
+
+
+    /**
      * Sets the QoS level.
      *
      * @param qos the QoS level
@@ -734,10 +757,10 @@ public class MqttBinaryClient {
         @Override
         public void run() {
             while (isConnected()) {
-                byte[] header = new byte[2];
+                byte[] header = new byte[1];
                 try {
                     int header_len = brokerSocket.getInputStream().read(header);
-                    byte[] message = new byte[Byte.toUnsignedInt(header[1])];
+                    byte[] message = new byte[decodeRemainingLength()];
                     MessageType messageType = byteToMessageType(Byte.toUnsignedInt(header[0]) >> 4);
                     int message_len = brokerSocket.getInputStream().read(message);
                     switch (messageType) {

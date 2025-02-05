@@ -14,7 +14,7 @@ public class MqttClientPublisherSensors implements MqttCallback {
 	private AtomicReference<Double> avgTemperature = new AtomicReference<>(0.0);
 	private AtomicReference<Double> avgHumidity = new AtomicReference<>(0.0);
 	private MqttClient client;
-	private String[] sensors = { "dht20", "sht30" };
+	private String[] sensors = {"dht22"};
 	private int qos = 0;
 	private String topic;
 	private String clientId;
@@ -95,8 +95,8 @@ public class MqttClientPublisherSensors implements MqttCallback {
 
 			while (true) {
 				for (String sensor : sensors) {
-					double value = sendTemperature ? 19.0 + (10.0 * random.nextDouble())
-							: 45.0 + (20.0 * random.nextDouble());
+					double value = sendTemperature ? 15.0 + (20.0 * random.nextDouble()) * (random.nextDouble() > 0.5 ? -1 : 1)
+							: 45.0 + (20.0 * random.nextDouble()) * (random.nextDouble() > 0.5 ? -1 : 1);
 					if (avgTemperature.get() != 0) {
 						if (sendTemperature) {
 							LOGGER.info("Mqtt Sensors: Difference between the temperature and the average temperature: "
